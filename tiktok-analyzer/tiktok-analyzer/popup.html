@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TikTok Analyzer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #13131a;
+    --bg3: #1c1c26;
+    --border: #2a2a38;
+    --border2: #3a3a50;
+    --text: #e8e8f0;
+    --muted: #7878a0;
+    --accent: #fe2c55;
+    --accent2: #ff6b6b;
+    --teal: #25f4ee;
+    --purple: #a855f7;
+    --gold: #fbbf24;
+    --green: #22d3a0;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    width: 480px;
+    min-height: 200px;
+    max-height: 680px;
+    overflow-y: auto;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  body::-webkit-scrollbar { width: 5px; }
+  body::-webkit-scrollbar-track { background: var(--bg); }
+  body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+  /* HEADER */
+  .header {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg2);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .logo {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .header-info { flex: 1; }
+  .header-title { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+  .header-sub { font-size: 11px; color: var(--muted); }
+
+  .btn-crawl {
+    padding: 7px 14px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 7px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    white-space: nowrap;
+  }
+  .btn-crawl:hover { opacity: .85; }
+  .btn-crawl:active { transform: scale(.97); }
+  .btn-crawl:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+  /* STATE SCREENS */
+  .screen { padding: 20px 16px; }
+
+  .idle-state {
+    text-align: center;
+    padding: 32px 20px;
+  }
+  .idle-icon { font-size: 40px; margin-bottom: 12px; }
+  .idle-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .idle-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .idle-url {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: var(--bg3);
+    border-radius: var(--radius);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--teal);
+    border: 1px solid var(--border);
+  }
+
+  .loading-state {
+    text-align: center;
+    padding: 32px 20px;
+  }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 14px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13px; font-weight: 500; color: var(--text); }
+  .loading-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  .error-state {
+    text-align: center;
+    padding: 24px 20px;
+  }
+  .error-icon { font-size: 32px; margin-bottom: 10px; }
+  .error-msg { font-size: 12px; color: #ff6b6b; line-height: 1.6; }
+
+  /* USER CARD */
+  .user-card {
+    margin: 12px 16px;
+    padding: 12px 14px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .user-avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--accent);
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: white;
+  }
+  .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .user-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .user-handle { font-size: 11px; color: var(--teal); font-family: 'JetBrains Mono', monospace; }
+  .user-stats-row {
+    display: flex; gap: 14px; margin-top: 5px;
+  }
+  .user-stat { font-size: 11px; color: var(--muted); }
+  .user-stat strong { color: var(--text); font-weight: 600; }
+
+  /* SUMMARY METRICS */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 0 16px 12px;
+  }
+  .metric-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 10px 8px;
+    text-align: center;
+  }
+  .metric-val {
+    font-size: 16px; font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .metric-val.accent { color: var(--accent); }
+  .metric-val.teal { color: var(--teal); }
+  .metric-val.gold { color: var(--gold); }
+  .metric-val.purple { color: var(--purple); }
+  .metric-label { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+  /* SECTION */
+  .section {
+    padding: 0 16px 16px;
+  }
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* DAY BLOCKS */
+  .day-block {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  .day-header {
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s;
+  }
+  .day-header:hover { background: var(--bg3); }
+
+  .day-date {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+  }
+  .day-count-badge {
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--accent);
+    color: white;
+  }
+  .day-metrics {
+    display: flex; gap: 12px;
+    font-size: 11px; color: var(--muted);
+  }
+  .day-metrics span { display: flex; align-items: center; gap: 3px; }
+  .day-chevron {
+    color: var(--muted);
+    font-size: 10px;
+    transition: transform .2s;
+  }
+  .day-chevron.open { transform: rotate(180deg); }
+
+  /* VIDEO LIST */
+  .video-list {
+    border-top: 1px solid var(--border);
+    display: none;
+  }
+  .video-list.open { display: block; }
+
+  .video-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .video-item:last-child { border-bottom: none; }
+
+  .video-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--teal);
+    min-width: 42px;
+    padding-top: 1px;
+    flex-shrink: 0;
+  }
+
+  .video-info { flex: 1; min-width: 0; }
+  .video-desc {
+    font-size: 12px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 5px;
+  }
+  .video-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .stat-pill {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 7px;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 500;
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+  }
+  .stat-pill.views { color: var(--teal); border-color: rgba(37,244,238,.25); background: rgba(37,244,238,.06); }
+  .stat-pill.likes { color: var(--accent); border-color: rgba(254,44,85,.25); background: rgba(254,44,85,.06); }
+  .stat-pill.comments { color: var(--gold); border-color: rgba(251,191,36,.25); background: rgba(251,191,36,.06); }
+  .stat-pill.shares { color: var(--purple); border-color: rgba(168,85,247,.25); background: rgba(168,85,247,.06); }
+  .stat-pill.saves { color: var(--green); border-color: rgba(34,211,160,.25); background: rgba(34,211,160,.06); }
+
+  .stat-icon { font-size: 10px; }
+
+  /* HOUR HEATMAP */
+  .heatmap-wrap {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .heatmap-title { font-size: 11px; color: var(--muted); margin-bottom: 10px; font-weight: 500; }
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: repeat(24, 1fr);
+    gap: 2px;
+    margin-bottom: 4px;
+  }
+  .heatmap-cell {
+    height: 20px;
+    border-radius: 3px;
+    background: var(--border);
+    cursor: default;
+    position: relative;
+  }
+  .heatmap-cell[data-count="0"] { background: var(--border); }
+  .heatmap-cell[data-count="1"] { background: rgba(254,44,85,.3); }
+  .heatmap-cell[data-count="2"] { background: rgba(254,44,85,.55); }
+  .heatmap-cell[data-count="3"] { background: rgba(254,44,85,.75); }
+  .heatmap-cell[data-count="4"] { background: rgba(254,44,85,.9); }
+  .heatmap-cell[data-level="high"] { background: var(--accent); }
+  .heatmap-labels {
+    display: grid;
+    grid-template-columns: repeat(24, 1fr);
+    gap: 2px;
+  }
+  .heatmap-label {
+    font-size: 8px;
+    color: var(--muted);
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* EXPORT */
+  .export-row {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    background: var(--bg2);
+    position: sticky;
+    bottom: 0;
+  }
+  .btn-export {
+    flex: 1;
+    padding: 8px;
+    background: var(--bg3);
+    color: var(--muted);
+    border: 1px solid var(--border2);
+    border-radius: 7px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .btn-export:hover { color: var(--text); border-color: var(--text); background: var(--bg3); }
+  .btn-export.primary {
+    background: rgba(254,44,85,.12);
+    color: var(--accent);
+    border-color: rgba(254,44,85,.35);
+  }
+  .btn-export.primary:hover { background: rgba(254,44,85,.2); }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    padding: 7px 14px;
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--text);
+    opacity: 0;
+    transition: all .25s;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">T</div>
+  <div class="header-info">
+    <div class="header-title">TikTok Analyzer</div>
+    <div class="header-sub" id="headerSub">7 ngày gần nhất</div>
+  </div>
+  <button class="btn-crawl" id="btnCrawl">▶ Phân tích</button>
+</div>
+
+<div id="stateIdle" class="idle-state">
+  <div class="idle-icon">📊</div>
+  <div class="idle-title">Sẵn sàng phân tích</div>
+  <div class="idle-desc">Mở trang profile TikTok rồi nhấn <strong>Phân tích</strong><br>để thu thập dữ liệu 7 ngày gần nhất.</div>
+  <div class="idle-url">https://www.tiktok.com/@username</div>
+</div>
+
+<div id="stateLoading" class="loading-state" style="display:none">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">Đang thu thập dữ liệu...</div>
+  <div class="loading-sub" id="loadingSub">Vui lòng đợi trong giây lát</div>
+</div>
+
+<div id="stateError" class="error-state" style="display:none">
+  <div class="error-icon">⚠️</div>
+  <div class="error-msg" id="errorMsg">Đã xảy ra lỗi</div>
+  <button id="btnDebug" style="margin-top:12px;padding:6px 14px;background:var(--bg3);color:var(--muted);border:1px solid var(--border2);border-radius:7px;font-family:inherit;font-size:11px;cursor:pointer;display:none;">📋 Copy Debug Log</button>
+</div>
+
+<div id="stateResult" style="display:none">
+  <div class="user-card" id="userCard"></div>
+  <div class="metrics-row" id="metricsRow"></div>
+  <div class="section">
+    <div class="section-title">Giờ đăng (7 ngày)</div>
+    <div class="heatmap-wrap" id="heatmapWrap"></div>
+    <div class="section-title">Chi tiết từng ngày</div>
+    <div id="dayBlocks"></div>
+  </div>
+  <div class="export-row">
+    <button class="btn-export" id="btnCSV">📥 CSV</button>
+    <button class="btn-export" id="btnJSON">{ } JSON</button>
+    <button class="btn-export primary" id="btnRefresh">🔄 Làm mới</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="popup.js"></script>
+</body>
+</html>
